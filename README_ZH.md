@@ -31,7 +31,7 @@ pip install -r requirements.txt
 python run.py
 ```
 
-### Docker COMPOSE运行
+### Docker Compose运行
 
 1. 拉去代码到本地
 ```shell
