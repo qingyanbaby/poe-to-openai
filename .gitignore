@@ -1,0 +1,16 @@
+# 忽略虚拟环境
+venv/
+.venv/
+
+# 忽略缓存文件和日志
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# 忽略编辑器生成的文件
+.vscode/
+.idea/
+.env
+
+test_data

@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  api_service:
+    build: .
+    ports:
+      - "39527:39527"
+    environment:
+      CUSTOM_TOKEN: sk-your-own-custom-token
+      SYSTEM_TOKEN: your-poe-api-key
