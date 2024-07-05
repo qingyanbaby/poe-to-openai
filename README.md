@@ -50,6 +50,7 @@ cd poe_2_openai
 
 3. Run the application
 ```shell
+docker compose build
 docker compose up -d
 ```
 
@@ -59,13 +60,11 @@ docker compose up -d
 ```
 
 ## Model Conversion Explanation
-```python
-model_mapping = {
-    "gpt-3.5-turbo-16k": "ChatGPT-16k",
-    "gpt-3.5-turbo": "ChatGPT",  
-    "gpt-4": "GPT-4",
-    "gpt-4-turbo": "Claude-3-Opus",
-    "gpt-4-vision-preview": "GPT-4-128k",
-    "gpt-4-turbo-preview": "Claude-3-Opus-200k"
-}
+```shell
+# edit the .env file
+MODEL_MAPPING='{
+    "gpt-3.5-turbo": "GPT-3.5-Turbo",
+    "gpt-4o": "GPT-4o",
+    "gpt-4-turbo": "GPT-4-Turbo"
+}'
 ```

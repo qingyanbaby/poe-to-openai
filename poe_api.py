@@ -1,4 +1,6 @@
+import json
 import logging
+import os
 
 from fastapi import WebSocket, Form
 from fastapi.responses import JSONResponse
@@ -10,16 +12,6 @@ timeout = 120
 logging.basicConfig(level=logging.DEBUG)
 
 client_dict = {}
-
-model_mapping = {
-    "gpt-3.5-turbo-16k": "ChatGPT-16k",
-    "gpt-3.5-turbo": "ChatGPT",
-    "gpt-4": "GPT-4",
-    "gpt-4-turbo": "Claude-3-Opus",
-    "gpt-4-vision-preview": "GPT-4-128k",
-    "gpt-4-turbo-preview": "Claude-3-Opus-200k"
-}
-
 
 async def get_responses(api_key, prompt=[], bot="gpt-4"):
     bot_name = get_bot(bot)
@@ -45,7 +37,7 @@ async def stream_get_responses(api_key, prompt, bot):
     bot_name = get_bot(bot)
     messages = openai_message_to_poe_message(prompt)
     async for partial in get_bot_response(messages=messages, bot_name=bot_name, api_key=api_key,
-                                          skip_system_prompt=False):
+                                          skip_system_prompt=True):
         yield partial.text
 
 
@@ -96,7 +88,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 def get_bot(model):
-    return model_mapping.get(model, "ChatGPT-16k")
+    model_mapping = json.loads(os.environ.get("MODEL_MAPPING", "{}"))
+    return model_mapping.get(model, "GPT-4o")
 
 
 def openai_message_to_poe_message(messages=[]):

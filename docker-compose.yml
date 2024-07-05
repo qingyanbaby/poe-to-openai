@@ -8,3 +8,8 @@ services:
     environment:
       CUSTOM_TOKEN: sk-your-own-custom-token
       SYSTEM_TOKEN: your-poe-api-key
+      MODEL_MAPPING: '{
+        "gpt-3.5-turbo": "GPT-3.5-Turbo",
+        "gpt-4o": "GPT-4o",
+        "gpt-4-turbo": "GPT-4-Turbo"
+      }'
