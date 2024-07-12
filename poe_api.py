@@ -19,7 +19,7 @@ async def get_responses(api_key, prompt=[], bot="gpt-4"):
     messages = openai_message_to_poe_message(prompt)
     print("=================", messages, "=================")
 
-    additional_params = {"temperature": 0.7, "skip_system_prompt": True, "logit_bias": {}, "stop_sequences": []}
+    additional_params = {"temperature": 0.7, "skip_system_prompt": False, "logit_bias": {}, "stop_sequences": []}
     query = QueryRequest(
         query=messages,
         user_id="",
