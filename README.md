@@ -2,7 +2,7 @@
 [简体中文说明](README_ZH.md)
 
 This is a project that converts the official `poe.com` API to the OpenAI API. It only supports the `/v1/chat/completions` endpoint.
-
+## poe-2-openai poe-to-openai poe-gpt-api poe-openai-api  poe-to-gpt poe-2-gpt poe-api gpt-api openai-api
 ## Usage
 ### Running Locally
 
