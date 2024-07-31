@@ -13,3 +13,8 @@ services:
         "gpt-4o": "GPT-4o",
         "gpt-4-turbo": "GPT-4-Turbo"
       }'
+      PROXY_TYPE: socks
+      PROXY_HOST:
+      PROXY_PORT:
+      PROXY_USERNAME:
+      PROXY_PASSWORD:

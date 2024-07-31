@@ -2,7 +2,8 @@ import json
 import logging
 import os
 
-from fastapi import WebSocket, Form
+import httpx
+from fastapi import Form
 from fastapi.responses import JSONResponse
 from fastapi_poe.client import get_bot_response, get_final_response, QueryRequest
 from fastapi_poe.types import ProtocolMessage
@@ -12,6 +13,7 @@ timeout = 120
 logging.basicConfig(level=logging.DEBUG)
 
 client_dict = {}
+
 
 async def get_responses(api_key, prompt=[], bot="gpt-4"):
     bot_name = get_bot(bot)
@@ -30,14 +32,17 @@ async def get_responses(api_key, prompt=[], bot="gpt-4"):
         **additional_params
     )
 
-    return await get_final_response(query, bot_name=bot_name, api_key=api_key)
+    session = create_client()
+    return await get_final_response(query, bot_name=bot_name, api_key=api_key, session=session)
 
 
 async def stream_get_responses(api_key, prompt, bot):
     bot_name = get_bot(bot)
     messages = openai_message_to_poe_message(prompt)
+
+    session = create_client()
     async for partial in get_bot_response(messages=messages, bot_name=bot_name, api_key=api_key,
-                                          skip_system_prompt=True):
+                                          skip_system_prompt=True, session=session):
         yield partial.text
 
 
@@ -69,24 +74,6 @@ async def ask(token: str = Form(...), bot: str = Form(...), content: str = Form(
         return JSONResponse(status_code=400, content={"message": errmsg})
 
 
-# @app.websocket("/stream")
-async def websocket_endpoint(websocket: WebSocket):
-    try:
-        await websocket.accept()
-        token = await websocket.receive_text()
-        bot = await websocket.receive_text()
-        content = await websocket.receive_text()
-        add_token(token)
-        async for ret in stream_get_responses(token, content, bot):
-            await websocket.send_text(ret)
-    except Exception as e:
-        errmsg = f"An exception of type {type(e).__name__} occurred. Arguments: {e.args}"
-        logging.info(errmsg)
-        await websocket.send_text(errmsg)
-    finally:
-        await websocket.close()
-
-
 def get_bot(model):
     model_mapping = json.loads(os.environ.get("MODEL_MAPPING", "{}"))
     return model_mapping.get(model, "GPT-4o")
@@ -100,3 +87,48 @@ def openai_message_to_poe_message(messages=[]):
         new_messages.append(ProtocolMessage(role=role, content=message["content"]))
 
     return new_messages
+
+
+def create_client():
+    proxy_config = {
+        "proxy_type": os.environ.get("PROXY_TYPE"),
+        "proxy_host": os.environ.get("PROXY_HOST"),
+        "proxy_port": os.environ.get("PROXY_PORT"),
+        "proxy_username": os.environ.get("PROXY_USERNAME"),
+        "proxy_password": os.environ.get("PROXY_PASSWORD"),
+    }
+
+    proxy = create_proxy(proxy_config)
+    client = httpx.AsyncClient(timeout=600, proxies=proxy)
+    return client
+
+
+def create_proxy(proxy_config):
+    proxy_type = proxy_config["proxy_type"]
+    proxy_url = create_proxy_url(proxy_config)
+
+    if proxy_type in ["http", "socks"] and proxy_url:
+        return {
+            "http://": proxy_url,
+            "https://": proxy_url,
+        }
+    else:
+        return None
+
+
+def create_proxy_url(proxy_config):
+    proxy_type = proxy_config["proxy_type"]
+    proxy_host = proxy_config["proxy_host"]
+    proxy_port = proxy_config["proxy_port"]
+    proxy_username = proxy_config["proxy_username"]
+    proxy_password = proxy_config["proxy_password"]
+
+    if not proxy_host or not proxy_port:
+        return None
+
+    if proxy_type == "http":
+        return f"http://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+    elif proxy_type == "socks":
+        return f"socks5://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+    else:
+        return None

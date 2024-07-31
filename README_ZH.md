@@ -2,6 +2,11 @@
 这是一个`poe.com`官方API转openai的API的项目
 仅支持接口`/v1/chat/completions`
 
+## 更新日志
+1.0.0  `/v1/chat/completions`接口支持
+1.0.1  环境变量自定义模型映射
+1.1.0  添加proxy支持
+
 ## 使用方式
 ### 本地运行
 
@@ -66,4 +71,14 @@ MODEL_MAPPING='{
     "gpt-4o": "GPT-4o",
     "gpt-4-turbo": "GPT-4-Turbo"
 }'
+```
+
+## 代理设置
+```shell
+# 请在 .env 文件自定义编辑
+PROXY_TYPE=socks # socks/http，socks仅支持socks5代理
+PROXY_HOST=127.0.0.1 # 代理地址
+PROXY_PORT=6668 # 代理端口
+PROXY_USERNAME= # 代理用户名，可选
+PROXY_PASSWORD= # 代理密码，可选
 ```
