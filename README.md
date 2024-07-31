@@ -7,7 +7,9 @@ This is a project that converts the official `poe.com` API to the OpenAI API.
 
 ## Changelog
 1.0.0  `/v1/chat/completions` endpoint support
+
 1.0.1  Environment variable custom model mapping
+
 1.1.0  Add proxy support
 
 ## Usage
