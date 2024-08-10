@@ -12,6 +12,8 @@ This is a project that converts the official `poe.com` API to the OpenAI API.
 
 1.1.0  Add proxy support
 
+1.1.1  Add cross-origin configuration
+
 ## Usage
 ### Running Locally
 
