@@ -58,22 +58,6 @@ def add_token(token: str):
         return "exist"
 
 
-# @app.post("/add_token")
-async def add_token_endpoint(token: str = Form(...)):
-    return add_token(token)
-
-
-# @app.post("/ask")
-async def ask(token: str = Form(...), bot: str = Form(...), content: str = Form(...)):
-    add_token(token)
-    try:
-        return await get_responses(token, content, bot)
-    except Exception as e:
-        errmsg = f"An exception of type {type(e).__name__} occurred. Arguments: {e.args}"
-        logging.info(errmsg)
-        return JSONResponse(status_code=400, content={"message": errmsg})
-
-
 def get_bot(model):
     model_mapping = json.loads(os.environ.get("MODEL_MAPPING", "{}"))
     return model_mapping.get(model, "GPT-4o")

@@ -8,8 +8,8 @@ from fastapi import APIRouter
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-import poe_api
-import utils
+from api import poe_api
+from util import utils
 
 app = FastAPI()
 logger = logging.getLogger(__name__)
@@ -75,43 +75,6 @@ async def process_openai_response_event_stream(model, messages, token):
     yield f"data: {json.dumps(web_response_to_api_response_stream('', model, True))}\n\n"
     # 通知结束
     yield "data: [DONE]\n\n"
-
-
-def api_data_to_web_data(model, messages):
-    new_messages = []
-    for message in messages:
-        if not message.get('content'):
-            continue
-
-        new_message = {
-            "id": utils.get_uuid(),
-            "author": {"role": message['role']},
-            "content": {
-                "content_type": "text",
-                "parts": [message['content']]
-            },
-            "metadata": {}
-        }
-        new_messages.append(new_message)
-
-    data = {
-        "action": "next",
-        "messages": new_messages,
-        "parent_message_id": utils.get_uuid(),
-        "model": model,
-        "timezone_offset_min": 480,
-        "suggestions": [],
-        "history_and_training_disabled": True,
-        "conversation_mode": {"kind": "primary_assistant"},
-        "force_paragen": False,
-        "force_rate_limit": False,
-        "supports_modapi": False
-    }
-
-    logger.info("openai 请求数据: %s", json.dumps(data, indent=2, ensure_ascii=False))
-
-    return data
-
 
 def web_response_to_api_response_stream(result, model, stop=None):
     data = {
