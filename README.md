@@ -16,6 +16,10 @@ This is a project that converts the official `poe.com` API to the OpenAI API.
 
 1.2.0  Add image generation support (`/v1/images/generations`)
 
+1.3.0  Add function calling support
+
+1.4.0  Add reasoning mode support
+
 ## Usage
 ### Running Locally
 
@@ -88,6 +92,49 @@ Example request:
   "messages": [
     {"role": "user", "content": "Hello"}
   ]
+}
+```
+
+#### Function Calling Example:
+```json
+{
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "user", "content": "What's the weather like in Beijing?"}
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_weather",
+        "description": "Get the current weather in a given location",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "The city and state, e.g. San Francisco, CA"
+            }
+          },
+          "required": ["location"]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+#### Reasoning Mode Example:
+```json
+{
+  "model": "gpt-5",
+  "messages": [
+    {"role": "user", "content": "Think carefully and solve: What is the next number in the sequence: 1, 1, 2, 3, 5, 8, 13, ?"}
+  ],
+  "reasoning_effort": "high",
+  "max_reasoning_tokens": 10000,
+  "max_completion_tokens": 32000
 }
 ```
 

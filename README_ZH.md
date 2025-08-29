@@ -13,6 +13,10 @@
 
 1.2.0  添加图像生成支持 (`/v1/images/generations`)
 
+1.3.0  添加函数调用支持
+
+1.4.0  添加推理模式支持
+
 ## 使用方式
 ### 本地运行
 
@@ -85,6 +89,49 @@ http://localhost:39527/v1/images/generations
   "messages": [
     {"role": "user", "content": "你好"}
   ]
+}
+```
+
+#### 函数调用示例:
+```json
+{
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "user", "content": "北京的天气怎么样？"}
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_weather",
+        "description": "获取指定位置的当前天气",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "城市和省份，例如：北京"
+            }
+          },
+          "required": ["location"]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+#### 推理模式示例:
+```json
+{
+  "model": "gpt-5",
+  "messages": [
+    {"role": "user", "content": "仔细思考并解决：数列 1, 1, 2, 3, 5, 8, 13, ? 的下一个数字是什么？"}
+  ],
+  "reasoning_effort": "high",
+  "max_reasoning_tokens": 10000,
+  "max_completion_tokens": 32000
 }
 ```
 
