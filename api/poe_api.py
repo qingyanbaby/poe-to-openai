@@ -14,13 +14,23 @@ logging.basicConfig(level=logging.DEBUG)
 client_dict = {}
 
 
-async def get_responses(api_key, prompt=[], bot="gpt-4", tools=None, tool_choice=None):
+async def get_responses(api_key, prompt=[], bot="gpt-4", tools=None, tool_choice=None, reasoning_effort=None, max_reasoning_tokens=None, max_completion_tokens=None):
     bot_name = get_bot(bot)
     # "system", "user", "bot"
     messages = openai_message_to_poe_message(prompt)
     print("=================", messages, "=================")
 
+    # Build additional parameters
     additional_params = {"temperature": 0.7, "skip_system_prompt": False, "logit_bias": {}, "stop_sequences": []}
+    
+    # Add reasoning mode parameters if provided
+    if reasoning_effort is not None:
+        additional_params["reasoning_effort"] = reasoning_effort
+    if max_reasoning_tokens is not None:
+        additional_params["max_reasoning_tokens"] = max_reasoning_tokens
+    if max_completion_tokens is not None:
+        additional_params["max_completion_tokens"] = max_completion_tokens
+    
     query = QueryRequest(
         query=messages,
         user_id="",
@@ -97,11 +107,21 @@ async def get_responses(api_key, prompt=[], bot="gpt-4", tools=None, tool_choice
     return result
 
 
-async def stream_get_responses(api_key, prompt, bot, tools=None, tool_choice=None):
+async def stream_get_responses(api_key, prompt, bot, tools=None, tool_choice=None, reasoning_effort=None, max_reasoning_tokens=None, max_completion_tokens=None):
     bot_name = get_bot(bot)
     messages = openai_message_to_poe_message(prompt)
 
+    # Build additional parameters
     additional_params = {"temperature": 0.7, "skip_system_prompt": False, "logit_bias": {}, "stop_sequences": []}
+    
+    # Add reasoning mode parameters if provided
+    if reasoning_effort is not None:
+        additional_params["reasoning_effort"] = reasoning_effort
+    if max_reasoning_tokens is not None:
+        additional_params["max_reasoning_tokens"] = max_reasoning_tokens
+    if max_completion_tokens is not None:
+        additional_params["max_completion_tokens"] = max_completion_tokens
+
     query = QueryRequest(
         query=messages,
         user_id="",

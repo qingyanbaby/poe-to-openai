@@ -26,17 +26,17 @@ async def root():
 @router.post("/v1/chat/completions")
 async def chat_proxy(request: Request):
     body = await request.json()
-    model, messages, stream, tools, tool_choice = parse_request_body(body)
+    model, messages, stream, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens = parse_request_body(body)
     if model is None:
         return JSONResponse(content={"error": "Invalid request body"}, status_code=400)
 
     token = await get_token_from_request(request)
 
     if stream:
-        return StreamingResponse(process_openai_response_event_stream(model, messages, token, tools, tool_choice),
+        return StreamingResponse(process_openai_response_event_stream(model, messages, token, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens),
                                  media_type="text/event-stream")
     else:
-        return await default_response(model, messages, token, tools, tool_choice)
+        return await default_response(model, messages, token, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens)
 
 
 def parse_request_body(body):
@@ -47,10 +47,15 @@ def parse_request_body(body):
         tools = body.get('tools', None)
         tool_choice = body.get('tool_choice', None)
         
-        return model, messages, stream, tools, tool_choice
+        # Parse reasoning mode parameters
+        reasoning_effort = body.get('reasoning_effort', None)
+        max_reasoning_tokens = body.get('max_reasoning_tokens', None)
+        max_completion_tokens = body.get('max_completion_tokens', None)
+        
+        return model, messages, stream, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens
     except json.JSONDecodeError as e:
         logger.debug(f"请求体解析错误: {e}")
-        return None, None, None, None, None
+        return None, None, None, None, None, None, None, None
 
 
 async def get_token_from_request(request_data):
@@ -69,8 +74,8 @@ async def get_token_from_request(request_data):
     return token
 
 
-async def process_openai_response_event_stream(model, messages, token, tools=None, tool_choice=None):
-    async for result in poe_api.stream_get_responses(token, messages, model, tools, tool_choice):
+async def process_openai_response_event_stream(model, messages, token, tools=None, tool_choice=None, reasoning_effort=None, max_reasoning_tokens=None, max_completion_tokens=None):
+    async for result in poe_api.stream_get_responses(token, messages, model, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens):
         # Check if result has tool calls
         if hasattr(result, 'tool_calls') and result.tool_calls:
             # Handle tool calls in streaming response
@@ -161,8 +166,8 @@ def web_response_to_api_response_stream(result, model, stop=None):
     return data
 
 
-async def default_response(model, messages, token, tools=None, tool_choice=None):
-    result = await poe_api.get_responses(token, messages, model, tools, tool_choice)
+async def default_response(model, messages, token, tools=None, tool_choice=None, reasoning_effort=None, max_reasoning_tokens=None, max_completion_tokens=None):
+    result = await poe_api.get_responses(token, messages, model, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens)
     
     # Check if result contains tool calls
     if isinstance(result, dict) and result.get('tool_calls'):
