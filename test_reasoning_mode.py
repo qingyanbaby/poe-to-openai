@@ -36,10 +36,19 @@ def test_reasoning_mode():
                                json=test_data)
         
         print(f"状态码: {response.status_code}")
+        response_json = response.json()
         print("响应数据:")
-        print(json.dumps(response.json(), indent=2, ensure_ascii=False))
+        print(json.dumps(response_json, indent=2, ensure_ascii=False))
         
-        return response.json()
+        # 验证token计算
+        if "usage" in response_json:
+            usage = response_json["usage"]
+            print(f"\nToken使用情况:")
+            print(f"  提示token数: {usage.get('prompt_tokens', 0)}")
+            print(f"  完成token数: {usage.get('completion_tokens', 0)}")
+            print(f"  总token数: {usage.get('total_tokens', 0)}")
+        
+        return response_json
     except Exception as e:
         print(f"请求失败: {e}")
         return None
@@ -77,10 +86,29 @@ def test_reasoning_mode_stream():
         print(f"状态码: {response.status_code}")
         print("流式响应数据:")
         
+        final_usage = None
         for line in response.iter_lines():
             if line:
                 decoded_line = line.decode('utf-8')
                 print(decoded_line)
+                # 检查是否包含usage信息
+                if "usage" in decoded_line and not "[DONE]" in decoded_line:
+                    try:
+                        # 提取usage信息
+                        data_part = decoded_line.replace("data: ", "")
+                        if data_part.strip():
+                            chunk_data = json.loads(data_part)
+                            if "usage" in chunk_data:
+                                final_usage = chunk_data["usage"]
+                    except:
+                        pass
+        
+        # 显示最终的token使用情况
+        if final_usage:
+            print(f"\n最终Token使用情况:")
+            print(f"  提示token数: {final_usage.get('prompt_tokens', 0)}")
+            print(f"  完成token数: {final_usage.get('completion_tokens', 0)}")
+            print(f"  总token数: {final_usage.get('total_tokens', 0)}")
                 
     except Exception as e:
         print(f"请求失败: {e}")
@@ -139,10 +167,19 @@ def test_function_call_with_reasoning_mode():
                                json=test_data)
         
         print(f"状态码: {response.status_code}")
+        response_json = response.json()
         print("响应数据:")
-        print(json.dumps(response.json(), indent=2, ensure_ascii=False))
+        print(json.dumps(response_json, indent=2, ensure_ascii=False))
         
-        return response.json()
+        # 验证token计算
+        if "usage" in response_json:
+            usage = response_json["usage"]
+            print(f"\nToken使用情况:")
+            print(f"  提示token数: {usage.get('prompt_tokens', 0)}")
+            print(f"  完成token数: {usage.get('completion_tokens', 0)}")
+            print(f"  总token数: {usage.get('total_tokens', 0)}")
+        
+        return response_json
     except Exception as e:
         print(f"请求失败: {e}")
         return None

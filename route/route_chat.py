@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from api import poe_api
 from util import utils
+from util.token_utils import calculate_usage
 
 app = FastAPI()
 logger = logging.getLogger(__name__)
@@ -75,6 +76,9 @@ async def get_token_from_request(request_data):
 
 
 async def process_openai_response_event_stream(model, messages, token, tools=None, tool_choice=None, reasoning_effort=None, max_reasoning_tokens=None, max_completion_tokens=None):
+    # Collect all text chunks to calculate usage
+    text_chunks = []
+    
     async for result in poe_api.stream_get_responses(token, messages, model, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens):
         # Check if result has tool calls
         if hasattr(result, 'tool_calls') and result.tool_calls:
@@ -92,6 +96,7 @@ async def process_openai_response_event_stream(model, messages, token, tools=Non
                 result_line = f"data: {json.dumps(web_response_to_api_response_stream_tool_call(tool_call_data, model))}\n\n"
                 yield result_line
         elif hasattr(result, 'text') and result.text:
+            text_chunks.append(result.text)
             result_line = f"data: {json.dumps(web_response_to_api_response_stream(result.text, model))}\n\n"
             yield result_line
         elif result.data:
@@ -99,12 +104,17 @@ async def process_openai_response_event_stream(model, messages, token, tools=Non
             result_line = f"data: {json.dumps(web_response_to_api_response_stream_json(result.data, model))}\n\n"
             yield result_line
     
+    # Calculate and yield final usage
+    prompt_text = "\n".join([msg.get("content", "") for msg in messages])
+    completion_text = "".join(text_chunks)
+    usage = calculate_usage(prompt_text, completion_text, model)
+    
     # 通知结束
-    yield f"data: {json.dumps(web_response_to_api_response_stream('', model, True))}\n\n"
+    yield f"data: {json.dumps(web_response_to_api_response_stream('', model, True, usage))}\n\n"
     # 通知结束
     yield "data: [DONE]\n\n"
 
-def web_response_to_api_response_stream_tool_call(tool_call_data, model, stop=None):
+def web_response_to_api_response_stream_tool_call(tool_call_data, model, stop=None, usage=None):
     data = {
         "id": f"chatcmpl-{int(datetime.now().timestamp())}",
         "object": "chat.completion.chunk",
@@ -118,7 +128,7 @@ def web_response_to_api_response_stream_tool_call(tool_call_data, model, stop=No
             },
             "finish_reason": "tool_calls" if not stop else "stop"
         }],
-        "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 100}
+        "usage": usage if usage else {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     }
 
     logger.debug("openai 返回数据: %s", json.dumps(data, indent=2, ensure_ascii=False))
@@ -126,7 +136,7 @@ def web_response_to_api_response_stream_tool_call(tool_call_data, model, stop=No
     return data
 
 
-def web_response_to_api_response_stream_json(data_json, model, stop=None):
+def web_response_to_api_response_stream_json(data_json, model, stop=None, usage=None):
     data = {
         "id": f"chatcmpl-{int(datetime.now().timestamp())}",
         "object": "chat.completion.chunk",
@@ -138,7 +148,7 @@ def web_response_to_api_response_stream_json(data_json, model, stop=None):
             "delta": data_json,
             "finish_reason": "stop" if stop else None
         }],
-        "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 100}
+        "usage": usage if usage else {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     }
 
     logger.debug("openai 返回数据: %s", json.dumps(data, indent=2, ensure_ascii=False))
@@ -146,7 +156,7 @@ def web_response_to_api_response_stream_json(data_json, model, stop=None):
     return data
 
 
-def web_response_to_api_response_stream(result, model, stop=None):
+def web_response_to_api_response_stream(result, model, stop=None, usage=None):
     data = {
         "id": f"chatcmpl-{int(datetime.now().timestamp())}",
         "object": "chat.completion.chunk",
@@ -158,7 +168,7 @@ def web_response_to_api_response_stream(result, model, stop=None):
             "delta": {"content": f"{result}"},
             "finish_reason": "stop" if stop else None
         }],
-        "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 100}
+        "usage": usage if usage else {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     }
 
     logger.debug("openai 返回数据: %s", json.dumps(data, indent=2, ensure_ascii=False))
@@ -169,16 +179,21 @@ def web_response_to_api_response_stream(result, model, stop=None):
 async def default_response(model, messages, token, tools=None, tool_choice=None, reasoning_effort=None, max_reasoning_tokens=None, max_completion_tokens=None):
     result = await poe_api.get_responses(token, messages, model, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens)
     
+    # Calculate usage
+    prompt_text = "\n".join([msg.get("content", "") for msg in messages])
+    completion_text = result.get('text', '') if isinstance(result, dict) else str(result)
+    usage = calculate_usage(prompt_text, completion_text, model)
+    
     # Check if result contains tool calls
     if isinstance(result, dict) and result.get('tool_calls'):
-        data = web_response_to_api_response_tool_call(model, result)
+        data = web_response_to_api_response_tool_call(model, result, usage)
     else:
-        data = web_response_to_api_response(model, result)
+        data = web_response_to_api_response(model, result, usage)
     
     return JSONResponse(content=data)
 
 
-def web_response_to_api_response_tool_call(model, result):
+def web_response_to_api_response_tool_call(model, result, usage=None):
     data = {
         "id": f"chatcmpl-{int(datetime.now().timestamp())}",
         "object": "chat.completion",
@@ -195,7 +210,7 @@ def web_response_to_api_response_tool_call(model, result):
             "logprobs": None,
             "finish_reason": "tool_calls"
         }],
-        "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 100}
+        "usage": usage if usage else {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     }
 
     logger.debug("openai 返回数据: %s", json.dumps(data, indent=2, ensure_ascii=False))
@@ -203,7 +218,7 @@ def web_response_to_api_response_tool_call(model, result):
     return data
 
 
-def web_response_to_api_response(model, result):
+def web_response_to_api_response(model, result, usage=None):
     # Extract text from result
     if isinstance(result, dict):
         content = result.get('text', '')
@@ -222,7 +237,7 @@ def web_response_to_api_response(model, result):
             "logprobs": None,
             "finish_reason": "stop"
         }],
-        "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 100}
+        "usage": usage if usage else {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     }
 
     logger.debug("openai 返回数据: %s", json.dumps(data, indent=2, ensure_ascii=False))
