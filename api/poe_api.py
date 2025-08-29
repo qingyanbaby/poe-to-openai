@@ -130,6 +130,35 @@ async def stream_get_responses(api_key, prompt, bot, tools=None, tool_choice=Non
         yield partial
 
 
+async def get_image(api_key, prompt, bot="dall-e-3"):
+    """
+    使用Poe API生成图像
+    
+    Args:
+        api_key: Poe API密钥
+        prompt: 图像生成提示词
+        bot: 要使用的图像生成机器人名称
+        
+    Returns:
+        生成的图像URL
+    """
+    bot_name = get_bot(bot)
+    message = ProtocolMessage(role="user", content=prompt)
+    
+    session = create_client()
+    logging.info(f"发送图像生成请求到 {bot_name}，提示词: {prompt}")
+    
+    result = ""
+    async for partial in get_bot_response(messages=[message], bot_name=bot_name, api_key=api_key,
+                                          skip_system_prompt=False, session=session):
+        # 保存最终结果
+        if partial.text and (partial.text.startswith("![") or "http" in partial.text):
+            result = partial.text
+            logging.info(f"收到图像结果: {result}")
+    
+    return result
+
+
 def add_token(token: str):
     if token not in client_dict:
         try:

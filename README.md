@@ -14,6 +14,8 @@ This is a project that converts the official `poe.com` API to the OpenAI API.
 
 1.1.1  Add cross-origin configuration
 
+1.2.0  Add image generation support (`/v1/images/generations`)
+
 ## Usage
 ### Running Locally
 
@@ -67,7 +69,39 @@ docker compose up -d
 
 ### Access URL
 ```shell
-# http://localhost:39527/v1/chat/completions
+# Chat completions:
+http://localhost:39527/v1/chat/completions
+
+# Image generation:
+http://localhost:39527/v1/images/generations
+```
+
+## API Endpoints
+
+### 1. Chat Completions
+Endpoint: `/v1/chat/completions`
+
+Example request:
+```json
+{
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "user", "content": "Hello"}
+  ]
+}
+```
+
+### 2. Image Generation
+Endpoint: `/v1/images/generations` 
+
+Example request:
+```json
+{
+  "model": "dall-e-3",
+  "prompt": "A beautiful sunset over the mountains",
+  "n": 1, // only support n=1
+  "size": "1024x1024"
+}
 ```
 
 ## Model Conversion Explanation
@@ -76,7 +110,10 @@ docker compose up -d
 MODEL_MAPPING='{
     "gpt-3.5-turbo": "GPT-3.5-Turbo",
     "gpt-4o": "GPT-4o",
-    "gpt-4-turbo": "GPT-4-Turbo"
+    "gpt-4-turbo": "GPT-4-Turbo",
+    "dall-e-3": "DALL-E-3",
+    "dall-e-2": "DALL-E-2",
+    "midjourney": "Midjourney"
 }'
 ```
 

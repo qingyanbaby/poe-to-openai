@@ -1,0 +1,40 @@
+### 环境变量
+@baseUrl = http://localhost:39527
+@authToken = Bearer sk-qq669846
+
+### 1. 聊天接口 (非流式)
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "user", "content": "你好，请介绍一下自己"}
+  ]
+}
+
+### 2. 聊天接口 (流式)
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "user", "content": "你好，请介绍一下自己"}
+  ],
+  "stream": true
+}
+
+### 3. 图片生成 - 默认尺寸 (1:1)
+POST {{baseUrl}}/v1/images/generations
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "model": "dall-e-3",
+  "prompt": "一只可爱的小猫",
+  "n": 1,
+  "size": "1024x1024"
+}

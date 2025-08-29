@@ -1,6 +1,6 @@
 # POE API to OpenAI API
 这是一个`poe.com`官方API转openai的API的项目
-仅支持接口`/v1/chat/completions`
+支持接口`/v1/chat/completions`和`/v1/images/generations`
 
 ## 更新日志
 1.0.0  `/v1/chat/completions`接口支持
@@ -10,6 +10,8 @@
 1.1.0  添加proxy支持
 
 1.1.1  添加跨域配置
+
+1.2.0  添加图像生成支持 (`/v1/images/generations`)
 
 ## 使用方式
 ### 本地运行
@@ -56,15 +58,47 @@ cd poe_2_openai
 # SYSTEM_TOKEN=your_poe_api_key 用于访问poe官方API的token
 ```
 
-### 访问地址
-```shell
-# http://localhost:39527/v1/chat/completions
-```
-
 3.运行
 ```shell
 docker compose build
 docker compose up -d
+```
+
+### 访问地址
+```shell
+# 聊天接口:
+http://localhost:39527/v1/chat/completions
+
+# 图像生成接口:
+http://localhost:39527/v1/images/generations
+```
+
+## API 接口
+
+### 1. 聊天接口
+接口地址: `/v1/chat/completions`
+
+请求示例:
+```json
+{
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "user", "content": "你好"}
+  ]
+}
+```
+
+### 2. 图像生成接口
+接口地址: `/v1/images/generations`
+
+请求示例:
+```json
+{
+  "model": "dall-e-3",
+  "prompt": "一只可爱的小猫",
+  "n": 1, // 只支持n=1
+  "size": "1024x1024"
+}
 ```
 
 ## 模型转换说明
@@ -73,7 +107,9 @@ docker compose up -d
 MODEL_MAPPING='{
     "gpt-3.5-turbo": "GPT-3.5-Turbo",
     "gpt-4o": "GPT-4o",
-    "gpt-4-turbo": "GPT-4-Turbo"
+    "gpt-4-turbo": "GPT-4-Turbo",
+    "dall-e-3": "DALL-E-3",
+    "flux-dev": "FLUX-dev"
 }'
 ```
 
