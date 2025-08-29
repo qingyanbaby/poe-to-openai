@@ -16,3 +16,11 @@ __pycache__/
 .conda
 
 test_data
+
+.github
+
+.claude
+
+CLAUDE.md
+
+fastapi_poe

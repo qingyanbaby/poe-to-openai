@@ -10,7 +10,7 @@ colorama==0.4.6
 dataclasses-json==0.6.4
 exceptiongroup==1.2.0
 fastapi-cache2==0.2.1
-fastapi_poe==0.0.53
+fastapi_poe==0.0.70
 fp==0.2
 frozenlist==1.4.1
 greenlet==3.0.3
