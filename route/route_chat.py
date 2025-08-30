@@ -31,13 +31,16 @@ async def chat_proxy(request: Request):
     if model is None:
         return JSONResponse(content={"error": "Invalid request body"}, status_code=400)
 
+    # 预处理消息，添加 reasoning 参数标记
+    processed_messages = preprocess_last_user_message(messages, reasoning_effort, max_reasoning_tokens)
+
     token = await get_token_from_request(request)
 
     if stream:
-        return StreamingResponse(process_openai_response_event_stream(model, messages, token, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens),
+        return StreamingResponse(process_openai_response_event_stream(model, processed_messages, token, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens),
                                  media_type="text/event-stream")
     else:
-        return await default_response(model, messages, token, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens)
+        return await default_response(model, processed_messages, token, tools, tool_choice, reasoning_effort, max_reasoning_tokens, max_completion_tokens)
 
 
 def parse_request_body(body):
@@ -57,6 +60,52 @@ def parse_request_body(body):
     except json.JSONDecodeError as e:
         logger.debug(f"请求体解析错误: {e}")
         return None, None, None, None, None, None, None, None
+
+
+def preprocess_last_user_message(messages, reasoning_effort=None, max_reasoning_tokens=None):
+    """预处理最后一条用户消息，添加 reasoning 参数标记"""
+    if not messages:
+        return messages
+    
+    # 创建消息副本以避免修改原始列表
+    processed_messages = [msg.copy() for msg in messages]
+    
+    # 获取最后一条消息
+    last_message = processed_messages[-1]
+    
+    # 检查是否为用户消息且内容为字符串
+    if last_message.get("role") == "user" and isinstance(last_message.get("content"), str):
+        content = last_message["content"]
+        
+        # 检查是否已包含标记
+        has_reasoning_effort = "--reasoning_effort=" in content
+        has_thinking_budget = "--thinking_budget=" in content
+        
+        # 构建要追加的标记
+        append_parts = []
+        
+        # 处理 reasoning_effort
+        if reasoning_effort and reasoning_effort in ["minimal", "low", "medium", "high"] and not has_reasoning_effort:
+            append_parts.append(f" --reasoning_effort={reasoning_effort}")
+        
+        # 处理 max_reasoning_tokens
+        if max_reasoning_tokens is not None and not has_thinking_budget:
+            try:
+                budget = int(max_reasoning_tokens)
+                # 裁剪范围到 0-30768
+                budget = max(0, min(budget, 30768))
+                append_parts.append(f" --thinking_budget={budget}")
+            except (ValueError, TypeError):
+                pass  # 忽略无效值
+        
+        # 如果有要追加的内容，则追加到消息末尾
+        if append_parts:
+            # 去除尾部空格后再追加
+            content = content.rstrip()
+            content += "".join(append_parts)
+            last_message["content"] = content
+    
+    return processed_messages
 
 
 async def get_token_from_request(request_data):
