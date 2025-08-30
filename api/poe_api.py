@@ -284,10 +284,56 @@ def create_proxy_url(proxy_config):
         return None
 
 
+def simplify_parameter_definition(param_def):
+    """简化复杂的参数定义，保持POE API兼容性"""
+    if not isinstance(param_def, dict):
+        return param_def
+
+    # 如果包含allOf，提取基本类型信息
+    if "allOf" in param_def:
+        simplified = {}
+
+        # 从allOf中提取类型信息
+        for schema in param_def["allOf"]:
+            if "type" in schema:
+                param_type = schema["type"]
+                # 如果是数组类型，取第一个作为主要类型
+                if isinstance(param_type, list):
+                    simplified["type"] = param_type[0]
+                else:
+                    simplified["type"] = param_type
+                break
+
+        # 保留默认值和描述
+        for key in ["default", "description"]:
+            if key in param_def:
+                simplified[key] = param_def[key]
+
+        return simplified
+
+    # 处理复合类型（如 type: ["boolean", "string"]）
+    if "type" in param_def and isinstance(param_def["type"], list):
+        simplified = param_def.copy()
+        simplified["type"] = param_def["type"][0]  # 取第一个类型
+        return simplified
+
+    # 其他情况直接返回
+    return param_def
+
 def convert_openai_tool_to_poe_tool(tool):
     """Convert OpenAI tool format to POE ToolDefinition"""
     if "function" in tool:
         function = tool["function"]
+
+        # 获取原始参数定义
+        original_params = function.get("parameters", {})
+        original_properties = original_params.get("properties", {})
+
+        # 简化复杂的参数定义
+        simplified_properties = {}
+        for param_name, param_def in original_properties.items():
+            simplified_properties[param_name] = simplify_parameter_definition(param_def)
+
         return ToolDefinition(
             type="function",
             function=ToolDefinition.FunctionDefinition(
@@ -295,8 +341,8 @@ def convert_openai_tool_to_poe_tool(tool):
                 description=function.get("description", ""),
                 parameters=ToolDefinition.FunctionDefinition.ParametersDefinition(
                     type="object",
-                    properties=function.get("parameters", {}).get("properties", {}),
-                    required=function.get("parameters", {}).get("required", [])
+                    properties=simplified_properties,
+                    required=original_params.get("required", [])
                 )
             )
         )
