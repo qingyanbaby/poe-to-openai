@@ -20,6 +20,8 @@ This is a project that converts the official `poe.com` API to the OpenAI API.
 
 1.4.0  Add reasoning mode support
 
+1.5.0  Add claude-code-router calling support with complex tool schema compatibility
+
 ## Usage
 ### Running Locally
 
@@ -138,7 +140,58 @@ Example request:
 }
 ```
 
-### 2. Image Generation
+### 2. Claude-Code-Router Support
+Endpoint: `/v1/chat/completions`
+
+This version supports complex tool schemas from claude-code-router, including:
+- Complex `allOf` JSON Schema structures
+- Composite types like `["boolean", "string"]`
+- Advanced parameter constraints and validations
+
+Example request with complex tools:
+```json
+{
+  "model": "gpt-4o",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Fetch content from https://example.com with image processing"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "mcp__fetch__imageFetch",
+        "description": "Retrieves URLs from the Internet and extracts their content as markdown with image processing support",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "enableFetchImages": {
+              "type": ["boolean", "string"],
+              "default": false
+            },
+            "imageMaxCount": {
+              "allOf": [
+                {"type": ["number", "string"]},
+                {"type": "number", "minimum": 0, "maximum": 10}
+              ],
+              "default": 3
+            }
+          },
+          "required": ["url"]
+        }
+      }
+    }
+  ]
+}
+```
+
+### 3. Image Generation
 Endpoint: `/v1/images/generations` 
 
 Example request:

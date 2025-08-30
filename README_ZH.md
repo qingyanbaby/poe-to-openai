@@ -17,6 +17,8 @@
 
 1.4.0  添加推理模式支持
 
+1.5.0  添加claude-code-router调用支持，兼容复杂工具Schema
+
 ## 使用方式
 ### 本地运行
 
@@ -135,7 +137,58 @@ http://localhost:39527/v1/images/generations
 }
 ```
 
-### 2. 图像生成接口
+### 2. Claude-Code-Router支持
+接口地址: `/v1/chat/completions`
+
+此版本支持claude-code-router的复杂工具Schema，包括：
+- 复杂的`allOf` JSON Schema结构
+- 复合类型如`["boolean", "string"]`
+- 高级参数约束和验证
+
+复杂工具调用示例:
+```json
+{
+  "model": "gpt-4o",
+  "messages": [
+    {
+      "role": "user",
+      "content": "从https://example.com获取内容并处理图像"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "mcp__fetch__imageFetch",
+        "description": "从互联网获取URL内容并提取为markdown格式，支持图像处理",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "enableFetchImages": {
+              "type": ["boolean", "string"],
+              "default": false
+            },
+            "imageMaxCount": {
+              "allOf": [
+                {"type": ["number", "string"]},
+                {"type": "number", "minimum": 0, "maximum": 10}
+              ],
+              "default": 3
+            }
+          },
+          "required": ["url"]
+        }
+      }
+    }
+  ]
+}
+```
+
+### 3. 图像生成接口
 接口地址: `/v1/images/generations`
 
 请求示例:
