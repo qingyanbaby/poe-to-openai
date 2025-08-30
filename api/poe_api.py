@@ -139,6 +139,16 @@ async def stream_get_responses(api_key, prompt, bot, tools=None, tool_choice=Non
     if tools:
         poe_tools = [convert_openai_tool_to_poe_tool(tool) for tool in tools]
     
+    # 调试：打印工具定义
+    if poe_tools:
+        print(f"DEBUG: 发送 {len(poe_tools)} 个工具定义到POE API")
+        for i, tool in enumerate(poe_tools):
+            tool_dict = tool.model_dump()
+            print(f"DEBUG: 工具 {i+1}: {tool_dict['function']['name']}")
+            print(f"DEBUG: 序列化大小: {len(json.dumps(tool_dict))} 字符")
+            if len(tool_dict['function']['description']) > 500:
+                print(f"DEBUG: 警告 - 描述过长: {len(tool_dict['function']['description'])} 字符")
+
     async for partial in stream_request(
         request=query,
         bot_name=bot_name,
